@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang='pt-br'>
+    <head>
+        <title>Socket.IO chat</title>
+
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                background-color: #334;
+                font-family: sans-serif;
+                color: #fff;
+            }
+
+            button, input {
+                font-family: sans-serif;
+                color: #fff;
+            }
+
+            .chat {
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+            }
+
+            #messages {
+                flex: 1;
+                overflow-y: scroll;
+                list-style: none;
+                padding: 20px 120px;
+            }
+
+            #messages li {
+                padding: 10px 30px;
+            }
+
+            #messages li.self {
+                background-color: #223;
+                margin: 20px 0 20px auto;
+                width: 40%;
+                padding: 15px 30px;
+                border-radius: 10px;
+            }
+
+            form {
+                background-color: #223;
+            }
+
+            .container {
+                display: flex;
+                width: 90%;
+                max-width: 1200px;
+                margin: 10px auto;
+            }
+
+            form input {
+                background-color: #223;
+                border: 1px solid #445;
+                border-radius: 4px;
+                flex: 1;
+                margin-right: 10px;
+                padding: 0 20px;
+            }
+
+            form input + input {
+                flex: 2;
+            }
+
+            form button {
+                height: 40px;
+                width: 120px;
+                border-radius: 4px;
+                background-color: #336;
+                border: none;
+                font-weight: 700;
+                font-size: 20px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="chat">
+            <ul id="messages"></ul>
+
+            <form>
+                <div class="container">
+                    <input placeholder="Nickname" id="n" autocomplete="off" />
+                    <input placeholder="Message" id="m" autocomplete="off" />
+                    <button>Send</button>
+                </div>
+            </form>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+        <script>
+            $(function () {
+                const socket = io();
+
+                $('form').submit(function(e) {
+                    e.preventDefault(); // prevents page reloading
+
+                    const data = {
+                        nickname: $('#n').val(),
+                        message: $('#m').val(),
+                    };
+                    
+                    socket.emit('chat message', data);
+                    $('#m').val('');
+                    return false;
+                });
+
+                socket.on('chat message others', data => {
+                    const { nickname, message } = data;
+                    $('#messages').append($('<li>').text(nickname + ': ' + message));
+                });
+
+                socket.on('chat message self', data => {
+                    const { nickname, message } = data;
+                    $('#messages').append($('<li class="self">').text(nickname + ': ' + message));
+                });
+
+                socket.on('restore messages', messages => {
+                    for (const data of messages) {
+                        const { nickname, message } = data;
+                        $('#messages').append($('<li>').text(nickname + ': ' + message));
+                    }
+                });
+
+                socket.on('user disconnected', id => {
+                    $('#messages').append($('<li>').text('user id (' + id + ') disconnected'));
+                });
+
+                socket.on('user connected', id => {
+                    $('#messages').append($('<li>').text('user id (' + id + ') connected'));
+                });
+            });
+        </script>
+    </body>
+</html>
